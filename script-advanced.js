@@ -409,6 +409,24 @@ class AdvancedQuizApp {
             console.error('Lỗi khi lưu câu sai vào storage:', error);
         }
     }
+    
+    showStorageStatus(message) {
+        // Create or update storage status element
+        let statusEl = document.querySelector('.storage-status');
+        if (!statusEl) {
+            statusEl = document.createElement('div');
+            statusEl.className = 'storage-status';
+            document.body.appendChild(statusEl);
+        }
+        
+        statusEl.textContent = message;
+        statusEl.classList.add('show');
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            statusEl.classList.remove('show');
+        }, 3000);
+    }
 
     displayQuestion() {
         if (this.isLoading) return;
@@ -446,7 +464,12 @@ class AdvancedQuizApp {
         
         // Update option texts
         Object.keys(question.options).forEach(option => {
-            this.optionTexts[option].textContent = question.options[option];
+            const upperOption = option.toUpperCase();
+            if (this.optionTexts[upperOption]) {
+                this.optionTexts[upperOption].textContent = question.options[option];
+            } else {
+                console.error(`Option text element not found for option: ${option} (tried ${upperOption})`);
+            }
         });
 
         // Reset button states
@@ -518,12 +541,23 @@ class AdvancedQuizApp {
     }
 
     showAnswerFeedback(selectedOption, correctAnswer) {
+        const upperCorrectAnswer = correctAnswer.toUpperCase();
+        const upperSelectedOption = selectedOption.toUpperCase();
+        
         // Highlight correct answer in green
-        this.optionButtons[correctAnswer].classList.add('correct');
+        if (this.optionButtons[upperCorrectAnswer]) {
+            this.optionButtons[upperCorrectAnswer].classList.add('correct');
+        } else {
+            console.error(`Correct answer button not found: ${correctAnswer} (tried ${upperCorrectAnswer})`);
+        }
         
         // Highlight wrong answer in red if different from correct
-        if (selectedOption !== correctAnswer) {
-            this.optionButtons[selectedOption].classList.add('wrong');
+        if (upperSelectedOption !== upperCorrectAnswer) {
+            if (this.optionButtons[upperSelectedOption]) {
+                this.optionButtons[upperSelectedOption].classList.add('wrong');
+            } else {
+                console.error(`Selected option button not found: ${selectedOption} (tried ${upperSelectedOption})`);
+            }
         }
 
         // Disable all buttons
