@@ -1,4 +1,4 @@
-class OptimizedQuizApp {
+class AdvancedQuizApp {
     constructor() {
         this.questions = [];
         this.currentQuestionIndex = 0;
@@ -8,15 +8,23 @@ class OptimizedQuizApp {
         this.isAnswered = false;
         
         // Optimization settings
-        this.questionsPerPage = 100; // Load 100 questions at a time
+        this.questionsPerPage = 100;
         this.currentPage = 0;
         this.totalQuestions = 0;
         this.loadedQuestions = [];
         this.isLoading = false;
         
+        // New features
+        this.isRandomMode = false;
+        this.randomQuestions = [];
+        this.originalQuestions = [];
+        this.wrongAnswersStorage = [];
+        this.currentQuizMode = 'normal'; // 'normal', 'wrong-answers'
+        
         this.initializeElements();
         this.loadQuestions();
         this.bindEvents();
+        this.loadWrongAnswersFromStorage();
     }
 
     initializeElements() {
@@ -80,18 +88,81 @@ class OptimizedQuizApp {
             color: #666;
         `;
         this.quizContainer.insertBefore(this.pageInfo, this.quizContainer.firstChild);
+        
+        // Add control buttons
+        this.addControlButtons();
+    }
+
+    addControlButtons() {
+        // Create control panel
+        const controlPanel = document.createElement('div');
+        controlPanel.id = 'control-panel';
+        controlPanel.style.cssText = `
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+        `;
+        
+        // Random mode button
+        const randomBtn = document.createElement('button');
+        randomBtn.id = 'random-mode-btn';
+        randomBtn.textContent = '🎲 Chế độ ngẫu nhiên';
+        randomBtn.className = 'btn btn-secondary';
+        randomBtn.style.cssText = `
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 20px;
+        `;
+        
+        // Wrong answers quiz button
+        const wrongQuizBtn = document.createElement('button');
+        wrongQuizBtn.id = 'wrong-quiz-btn';
+        wrongQuizBtn.textContent = '❌ Quiz câu sai';
+        wrongQuizBtn.className = 'btn btn-secondary';
+        wrongQuizBtn.style.cssText = `
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 20px;
+        `;
+        
+        // Clear wrong answers button
+        const clearBtn = document.createElement('button');
+        clearBtn.id = 'clear-wrong-btn';
+        clearBtn.textContent = '🗑️ Xóa câu sai';
+        clearBtn.className = 'btn btn-secondary';
+        clearBtn.style.cssText = `
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 20px;
+        `;
+        
+        controlPanel.appendChild(randomBtn);
+        controlPanel.appendChild(wrongQuizBtn);
+        controlPanel.appendChild(clearBtn);
+        
+        this.quizContainer.insertBefore(controlPanel, this.quizContainer.firstChild);
+        
+        // Store references
+        this.randomModeBtn = randomBtn;
+        this.wrongQuizBtn = wrongQuizBtn;
+        this.clearWrongBtn = clearBtn;
     }
 
     async loadQuestions() {
         try {
             this.showLoading(true);
             
-            // Load all questions at once (for small datasets)
             const response = await fetch('questions.json');
             const allQuestions = await response.json();
             
             this.totalQuestions = allQuestions.length;
             this.loadedQuestions = allQuestions;
+            this.originalQuestions = [...allQuestions]; // Keep original order
             
             // Load first batch
             this.loadQuestionBatch(0);
@@ -132,7 +203,14 @@ class OptimizedQuizApp {
             const startQ = this.currentPage * this.questionsPerPage + 1;
             const endQ = Math.min((this.currentPage + 1) * this.questionsPerPage, this.totalQuestions);
             
-            this.pageInfo.textContent = `Trang ${currentPageNum}/${totalPages} - Câu hỏi ${startQ}-${endQ} (Tổng: ${this.totalQuestions})`;
+            let modeText = '';
+            if (this.currentQuizMode === 'wrong-answers') {
+                modeText = ' (Quiz câu sai)';
+            } else if (this.isRandomMode) {
+                modeText = ' (Ngẫu nhiên)';
+            }
+            
+            this.pageInfo.textContent = `Trang ${currentPageNum}/${totalPages} - Câu hỏi ${startQ}-${endQ} (Tổng: ${this.totalQuestions})${modeText}`;
         }
     }
 
@@ -163,6 +241,112 @@ class OptimizedQuizApp {
         this.newQuizBtn.addEventListener('click', () => {
             this.restartQuiz();
         });
+        
+        // Bind new control buttons
+        this.randomModeBtn.addEventListener('click', () => {
+            this.toggleRandomMode();
+        });
+        
+        this.wrongQuizBtn.addEventListener('click', () => {
+            this.startWrongAnswersQuiz();
+        });
+        
+        this.clearWrongBtn.addEventListener('click', () => {
+            this.clearWrongAnswers();
+        });
+    }
+
+    toggleRandomMode() {
+        this.isRandomMode = !this.isRandomMode;
+        
+        if (this.isRandomMode) {
+            this.randomModeBtn.textContent = '🎯 Chế độ thứ tự';
+            this.randomModeBtn.style.background = '#ff9800';
+            this.randomModeBtn.classList.add('active');
+            this.shuffleQuestions();
+        } else {
+            this.randomModeBtn.textContent = '🎲 Chế độ ngẫu nhiên';
+            this.randomModeBtn.style.background = '';
+            this.randomModeBtn.classList.remove('active');
+            // Restore original order
+            this.loadedQuestions = [...this.originalQuestions];
+            this.loadQuestionBatch(0);
+        }
+        
+        this.updatePageInfo();
+        this.displayQuestion();
+    }
+
+    shuffleQuestions() {
+        // Create a copy of all questions and shuffle them
+        this.randomQuestions = [...this.loadedQuestions];
+        for (let i = this.randomQuestions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.randomQuestions[i], this.randomQuestions[j]] = [this.randomQuestions[j], this.randomQuestions[i]];
+        }
+        
+        // Replace loaded questions with shuffled ones
+        this.loadedQuestions = [...this.randomQuestions];
+        
+        // Load first batch of shuffled questions
+        this.loadQuestionBatch(0);
+    }
+
+    startWrongAnswersQuiz() {
+        if (this.wrongAnswersStorage.length === 0) {
+            alert('Chưa có câu hỏi nào sai để làm quiz!');
+            return;
+        }
+        
+        this.currentQuizMode = 'wrong-answers';
+        this.questions = [...this.wrongAnswersStorage];
+        this.totalQuestions = this.questions.length;
+        this.currentQuestionIndex = 0;
+        this.currentPage = 0;
+        
+        // Reset score
+        this.score = { correct: 0, wrong: 0 };
+        this.wrongAnswers = [];
+        this.userAnswers = [];
+        this.isAnswered = false;
+        
+        this.updatePageInfo();
+        this.updateScoreDisplay();
+        this.displayQuestion();
+        
+        // Update button states
+        this.wrongQuizBtn.textContent = `❌ Quiz câu sai (${this.wrongAnswersStorage.length})`;
+        this.wrongQuizBtn.style.background = '#f44336';
+    }
+
+    clearWrongAnswers() {
+        if (confirm('Bạn có chắc muốn xóa tất cả câu hỏi sai đã lưu?')) {
+            this.wrongAnswersStorage = [];
+            localStorage.removeItem('quiz-wrong-answers');
+            this.wrongQuizBtn.textContent = '❌ Quiz câu sai (0)';
+            this.wrongQuizBtn.style.background = '';
+            alert('Đã xóa tất cả câu hỏi sai!');
+        }
+    }
+
+    loadWrongAnswersFromStorage() {
+        try {
+            const saved = localStorage.getItem('quiz-wrong-answers');
+            if (saved) {
+                this.wrongAnswersStorage = JSON.parse(saved);
+                this.wrongQuizBtn.textContent = `❌ Quiz câu sai (${this.wrongAnswersStorage.length})`;
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải câu sai từ storage:', error);
+        }
+    }
+
+    saveWrongAnswersToStorage() {
+        try {
+            localStorage.setItem('quiz-wrong-answers', JSON.stringify(this.wrongAnswersStorage));
+        } catch (error) {
+            console.error('Lỗi khi lưu câu sai vào storage:', error);
+        }
     }
 
     displayQuestion() {
@@ -227,6 +411,24 @@ class OptimizedQuizApp {
                 questionNumber: globalQuestionNumber,
                 options: question.options
             });
+            
+            // Add to wrong answers storage (avoid duplicates)
+            const wrongAnswerData = {
+                id: question.id,
+                question: question.question,
+                options: question.options,
+                correct: question.correct,
+                userAnswer: selectedOption,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Check if this question is already in wrong answers
+            const exists = this.wrongAnswersStorage.some(w => w.id === question.id);
+            if (!exists) {
+                this.wrongAnswersStorage.push(wrongAnswerData);
+                this.saveWrongAnswersToStorage();
+                this.wrongQuizBtn.textContent = `❌ Quiz câu sai (${this.wrongAnswersStorage.length})`;
+            }
         }
 
         // Show correct/incorrect answers
@@ -293,6 +495,17 @@ class OptimizedQuizApp {
 
         // Display wrong answers
         this.displayWrongAnswers();
+        
+        // Reset button states
+        this.resetQuizModeButtons();
+    }
+
+    resetQuizModeButtons() {
+        this.currentQuizMode = 'normal';
+        this.isRandomMode = false;
+        this.randomModeBtn.textContent = '🎲 Chế độ ngẫu nhiên';
+        this.randomModeBtn.style.background = '';
+        this.wrongQuizBtn.style.background = '';
     }
 
     displayWrongAnswers() {
@@ -319,6 +532,7 @@ class OptimizedQuizApp {
         this.userAnswers = [];
         this.isAnswered = false;
         this.currentPage = 0;
+        this.currentQuizMode = 'normal';
 
         // Reset to first page
         this.loadQuestionBatch(0);
@@ -328,6 +542,7 @@ class OptimizedQuizApp {
         
         this.updateScoreDisplay();
         this.displayQuestion();
+        this.resetQuizModeButtons();
     }
 
     updateProgress() {
@@ -342,7 +557,7 @@ class OptimizedQuizApp {
     }
 }
 
-// Initialize the optimized quiz when the page loads
+// Initialize the advanced quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new OptimizedQuizApp();
+    new AdvancedQuizApp();
 });
