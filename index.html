@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Trắc Nghiệm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Quiz Trắc Nghiệm</h1>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="score-info">
+                <span>Đúng: <span id="correct-count">0</span></span>
+                <span>Sai: <span id="wrong-count">0</span></span>
+                <span>Câu: <span id="current-question">1</span>/<span id="total-questions">0</span></span>
+            </div>
+        </header>
+
+        <main>
+            <div class="quiz-container" id="quiz-container">
+                <div class="question-section">
+                    <h2 id="question-text">Đang tải câu hỏi...</h2>
+                </div>
+                
+                <div class="options-section">
+                    <button class="option-btn" id="option-a" data-option="A">
+                        <span class="option-label">A.</span>
+                        <span class="option-text" id="option-a-text">Tải...</span>
+                    </button>
+                    <button class="option-btn" id="option-b" data-option="B">
+                        <span class="option-label">B.</span>
+                        <span class="option-text" id="option-b-text">Tải...</span>
+                    </button>
+                    <button class="option-btn" id="option-c" data-option="C">
+                        <span class="option-label">C.</span>
+                        <span class="option-text" id="option-c-text">Tải...</span>
+                    </button>
+                    <button class="option-btn" id="option-d" data-option="D">
+                        <span class="option-label">D.</span>
+                        <span class="option-text" id="option-d-text">Tải...</span>
+                    </button>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="next-btn" class="btn btn-primary" disabled>Tiếp theo</button>
+                    <button id="restart-btn" class="btn btn-secondary" style="display: none;">Làm lại</button>
+                </div>
+            </div>
+
+            <div class="results-section" id="results-section" style="display: none;">
+                <h2>Kết quả Quiz</h2>
+                <div class="final-score">
+                    <p>Tổng số câu: <span id="final-total">0</span></p>
+                    <p>Đúng: <span id="final-correct" class="correct">0</span></p>
+                    <p>Sai: <span id="final-wrong" class="wrong">0</span></p>
+                    <p>Điểm: <span id="final-percentage">0</span>%</p>
+                </div>
+                
+                <div class="wrong-questions" id="wrong-questions">
+                    <h3>Các câu trả lời sai:</h3>
+                    <div id="wrong-list"></div>
+                </div>
+                
+                <button id="new-quiz-btn" class="btn btn-primary">Làm quiz mới</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script-optimized.js"></script>
+</body>
+</html>

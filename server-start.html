@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Server - Quiz App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .server-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .server-button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .server-button:hover {
+            background: #45a049;
+        }
+        .server-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #2196f3;
+        }
+        .instructions {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            margin: 20px 0;
+        }
+        .code-block {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Local Server cho Quiz Application</h1>
+    
+    <div class="server-container">
+        <h2>📋 Hướng dẫn Khởi động Server</h2>
+        <div class="instructions">
+            <h3>🔧 Cách 1: Sử dụng Python (Khuyến nghị)</h3>
+            <p>Mở Command Prompt hoặc PowerShell trong thư mục <code>qa-viewer</code> và chạy:</p>
+            <div class="code-block">
+                # Python 3
+                python -m http.server 8000
+                
+                # Hoặc Python 2
+                python -m SimpleHTTPServer 8000
+            </div>
+            <p>Sau đó mở trình duyệt và truy cập: <strong>http://localhost:8000</strong></p>
+        </div>
+
+        <div class="instructions">
+            <h3>🔧 Cách 2: Sử dụng Node.js</h3>
+            <p>Nếu bạn có Node.js, cài đặt http-server:</p>
+            <div class="code-block">
+                npm install -g http-server
+                http-server -p 8000
+            </div>
+            <p>Sau đó mở trình duyệt và truy cập: <strong>http://localhost:8000</strong></p>
+        </div>
+
+        <div class="instructions">
+            <h3>🔧 Cách 3: Sử dụng Live Server (VS Code)</h3>
+            <p>Nếu bạn sử dụng VS Code:</p>
+            <div class="code-block">
+                1. Cài đặt extension "Live Server"
+                2. Right-click vào index.html
+                3. Chọn "Open with Live Server"
+            </div>
+        </div>
+    </div>
+
+    <div class="server-container">
+        <h2>🧪 Test Server</h2>
+        <p>Kiểm tra xem server có hoạt động không:</p>
+        <button class="server-button" onclick="testServer()">Test Server</button>
+        <div id="server-status"></div>
+    </div>
+
+    <div class="server-container">
+        <h2>📊 Test Performance</h2>
+        <p>Sau khi server hoạt động, bạn có thể test hiệu suất:</p>
+        <button class="server-button" onclick="openPerformanceTest()">Mở Performance Test</button>
+        <button class="server-button" onclick="openQuizApp()">Mở Quiz App</button>
+    </div>
+
+    <div class="server-container">
+        <h2>❓ Troubleshooting</h2>
+        <h3>Lỗi thường gặp:</h3>
+        <ul>
+            <li><strong>Port 8000 đã được sử dụng:</strong> Thay đổi port khác (8001, 8080, etc.)</li>
+            <li><strong>Python không được cài đặt:</strong> Tải và cài đặt Python từ python.org</li>
+            <li><strong>Firewall chặn:</strong> Cho phép Python/Node.js qua firewall</li>
+            <li><strong>File không tồn tại:</strong> Đảm bảo file questions.json có trong thư mục</li>
+        </ul>
+    </div>
+
+    <script>
+        function testServer() {
+            const statusDiv = document.getElementById('server-status');
+            statusDiv.innerHTML = '<div class="status info">Đang test server...</div>';
+            
+            // Test if we can fetch questions.json
+            fetch('questions.json')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Server không phản hồi');
+                })
+                .then(data => {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Server hoạt động tốt!<br>
+                            📊 Đã tải được ${data.length} câu hỏi<br>
+                            🚀 Bạn có thể sử dụng ứng dụng quiz
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    statusDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ Server chưa hoạt động<br>
+                            📝 Lỗi: ${error.message}<br>
+                            🔧 Vui lòng khởi động server theo hướng dẫn trên
+                        </div>
+                    `;
+                });
+        }
+
+        function openPerformanceTest() {
+            window.open('performance-test.html', '_blank');
+        }
+
+        function openQuizApp() {
+            window.open('index.html', '_blank');
+        }
+
+        // Auto-test server on page load
+        window.addEventListener('load', () => {
+            setTimeout(testServer, 1000);
+        });
+    </script>
+</body>
+</html>
