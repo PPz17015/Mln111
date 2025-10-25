@@ -90,67 +90,14 @@ class AdvancedQuizApp {
         this.quizContainer.insertBefore(this.pageInfo, this.quizContainer.firstChild);
         
         // Add control buttons
-        this.addControlButtons();
+        this.initializeControlElements();
     }
 
-    addControlButtons() {
-        // Create control panel
-        const controlPanel = document.createElement('div');
-        controlPanel.id = 'control-panel';
-        controlPanel.style.cssText = `
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 10px;
-        `;
-        
-        // Random mode button
-        const randomBtn = document.createElement('button');
-        randomBtn.id = 'random-mode-btn';
-        randomBtn.textContent = '🎲 Chế độ ngẫu nhiên';
-        randomBtn.className = 'btn btn-secondary';
-        randomBtn.style.cssText = `
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 20px;
-        `;
-        
-        // Wrong answers quiz button
-        const wrongQuizBtn = document.createElement('button');
-        wrongQuizBtn.id = 'wrong-quiz-btn';
-        wrongQuizBtn.textContent = '❌ Quiz câu sai';
-        wrongQuizBtn.className = 'btn btn-secondary';
-        wrongQuizBtn.style.cssText = `
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 20px;
-        `;
-        
-        // Clear wrong answers button
-        const clearBtn = document.createElement('button');
-        clearBtn.id = 'clear-wrong-btn';
-        clearBtn.textContent = '🗑️ Xóa câu sai';
-        clearBtn.className = 'btn btn-secondary';
-        clearBtn.style.cssText = `
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 20px;
-        `;
-        
-        controlPanel.appendChild(randomBtn);
-        controlPanel.appendChild(wrongQuizBtn);
-        controlPanel.appendChild(clearBtn);
-        
-        this.quizContainer.insertBefore(controlPanel, this.quizContainer.firstChild);
-        
-        // Store references
-        this.randomModeBtn = randomBtn;
-        this.wrongQuizBtn = wrongQuizBtn;
-        this.clearWrongBtn = clearBtn;
+    initializeControlElements() {
+        // Use existing control panel elements from HTML
+        this.randomModeBtn = document.getElementById('random-mode-btn');
+        this.wrongQuizBtn = document.getElementById('wrong-quiz-btn');
+        this.clearWrongBtn = document.getElementById('clear-wrong-btn');
         
         // Jump to question elements
         this.jumpToQuestionDiv = document.getElementById('jump-to-question');
@@ -492,10 +439,9 @@ class AdvancedQuizApp {
             return;
         }
         
-        const isCorrect = selectedOption === question.correct;
+        const isCorrect = selectedOption.toUpperCase() === question.correct.toUpperCase();
         const globalQuestionNumber = this.currentPage * this.questionsPerPage + this.currentQuestionIndex + 1;
 
-        console.log(`Selecting option ${selectedOption} for question ID ${question.id}, Global number ${globalQuestionNumber}, Correct: ${question.correct}`);
 
         // Store user answer
         this.userAnswers[this.currentQuestionIndex] = selectedOption;
