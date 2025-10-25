@@ -151,6 +151,11 @@ class AdvancedQuizApp {
         this.randomModeBtn = randomBtn;
         this.wrongQuizBtn = wrongQuizBtn;
         this.clearWrongBtn = clearBtn;
+        
+        // Jump to question elements
+        this.jumpToQuestionDiv = document.getElementById('jump-to-question');
+        this.jumpInput = document.getElementById('jump-input');
+        this.jumpBtn = document.getElementById('jump-btn');
     }
 
     async loadQuestions() {
@@ -160,12 +165,15 @@ class AdvancedQuizApp {
             const response = await fetch('questions.json');
             const allQuestions = await response.json();
             
-            this.totalQuestions = allQuestions.length;
-            this.loadedQuestions = allQuestions;
-            this.originalQuestions = [...allQuestions]; // Keep original order
-            
-            // Load first batch
-            this.loadQuestionBatch(0);
+        this.totalQuestions = allQuestions.length;
+        this.loadedQuestions = allQuestions;
+        this.originalQuestions = [...allQuestions]; // Keep original order
+        
+        // Update jump input max value
+        this.jumpInput.max = this.totalQuestions;
+        
+        // Load first batch
+        this.loadQuestionBatch(0);
             
             this.showLoading(false);
             this.updatePageInfo();
@@ -178,19 +186,27 @@ class AdvancedQuizApp {
         }
     }
 
-    loadQuestionBatch(pageIndex) {
+    loadQuestionBatch(pageIndex, preserveIndex = false) {
         const startIndex = pageIndex * this.questionsPerPage;
         const endIndex = Math.min(startIndex + this.questionsPerPage, this.totalQuestions);
         
         this.questions = this.loadedQuestions.slice(startIndex, endIndex);
-        this.currentQuestionIndex = 0;
+        
+        // Only reset currentQuestionIndex if not preserving it (for jump functionality)
+        if (!preserveIndex) {
+            this.currentQuestionIndex = 0;
+        }
+        
         this.currentPage = pageIndex;
         
-        // Reset score for new page
-        this.score = { correct: 0, wrong: 0 };
-        this.wrongAnswers = [];
-        this.userAnswers = [];
-        this.isAnswered = false;
+        // Don't reset score and answers when jumping to preserve state
+        if (!preserveIndex) {
+            // Reset score for new page
+            this.score = { correct: 0, wrong: 0 };
+            this.wrongAnswers = [];
+            this.userAnswers = [];
+            this.isAnswered = false;
+        }
         
         this.updatePageInfo();
         this.updateScoreDisplay();
@@ -254,6 +270,17 @@ class AdvancedQuizApp {
         this.clearWrongBtn.addEventListener('click', () => {
             this.clearWrongAnswers();
         });
+        
+        // Jump to question functionality
+        this.jumpBtn.addEventListener('click', () => {
+            this.jumpToQuestion();
+        });
+        
+        this.jumpInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.jumpToQuestion();
+            }
+        });
     }
 
     toggleRandomMode() {
@@ -263,11 +290,13 @@ class AdvancedQuizApp {
             this.randomModeBtn.textContent = '🎯 Chế độ thứ tự';
             this.randomModeBtn.style.background = '#ff9800';
             this.randomModeBtn.classList.add('active');
+            this.jumpToQuestionDiv.style.display = 'none'; // Hide jump in random mode
             this.shuffleQuestions();
         } else {
             this.randomModeBtn.textContent = '🎲 Chế độ ngẫu nhiên';
             this.randomModeBtn.style.background = '';
             this.randomModeBtn.classList.remove('active');
+            this.jumpToQuestionDiv.style.display = 'flex'; // Show jump in sequential mode
             // Restore original order
             this.loadedQuestions = [...this.originalQuestions];
             this.loadQuestionBatch(0);
@@ -275,6 +304,38 @@ class AdvancedQuizApp {
         
         this.updatePageInfo();
         this.displayQuestion();
+    }
+    
+    jumpToQuestion() {
+        if (this.isRandomMode) {
+            alert('Tính năng nhảy tới câu hỏi chỉ có trong chế độ tuần tự!');
+            return;
+        }
+        
+        const questionNumber = parseInt(this.jumpInput.value);
+        if (!questionNumber || questionNumber < 1 || questionNumber > this.totalQuestions) {
+            alert(`Vui lòng nhập số câu hỏi từ 1 đến ${this.totalQuestions}`);
+            return;
+        }
+        
+        // Calculate target page and index
+        const targetPage = Math.floor((questionNumber - 1) / this.questionsPerPage);
+        const targetIndex = (questionNumber - 1) % this.questionsPerPage;
+        
+        console.log(`Jumping to question ${questionNumber}, page ${targetPage}, index ${targetIndex}`);
+        
+        // Load the target page and set the question index
+        this.currentQuestionIndex = targetIndex;
+        this.loadQuestionBatch(targetPage, true);
+        
+        // Clear input
+        this.jumpInput.value = '';
+        
+        // Display the question
+        this.displayQuestion();
+        
+        // Show feedback
+        this.showStorageStatus(`Đã nhảy tới câu hỏi ${questionNumber}`);
     }
 
     shuffleQuestions() {
@@ -352,6 +413,9 @@ class AdvancedQuizApp {
     displayQuestion() {
         if (this.isLoading) return;
         
+        // Debug logging
+        console.log(`Displaying question - Page: ${this.currentPage}, Index: ${this.currentQuestionIndex}, Questions length: ${this.questions.length}`);
+        
         if (this.currentQuestionIndex >= this.questions.length) {
             // Check if there are more pages
             const nextPage = this.currentPage + 1;
@@ -369,7 +433,14 @@ class AdvancedQuizApp {
         }
 
         const question = this.questions[this.currentQuestionIndex];
+        if (!question) {
+            console.error(`Question not found at index ${this.currentQuestionIndex}`);
+            return;
+        }
+        
         const globalQuestionNumber = this.currentPage * this.questionsPerPage + this.currentQuestionIndex + 1;
+        
+        console.log(`Displaying question ID: ${question.id}, Global number: ${globalQuestionNumber}`);
         
         this.questionText.textContent = `${globalQuestionNumber}. ${question.question}`;
         
@@ -393,8 +464,15 @@ class AdvancedQuizApp {
         if (this.isAnswered || this.isLoading) return;
 
         const question = this.questions[this.currentQuestionIndex];
+        if (!question) {
+            console.error(`Question not found at index ${this.currentQuestionIndex}`);
+            return;
+        }
+        
         const isCorrect = selectedOption === question.correct;
         const globalQuestionNumber = this.currentPage * this.questionsPerPage + this.currentQuestionIndex + 1;
+
+        console.log(`Selecting option ${selectedOption} for question ID ${question.id}, Global number ${globalQuestionNumber}, Correct: ${question.correct}`);
 
         // Store user answer
         this.userAnswers[this.currentQuestionIndex] = selectedOption;
